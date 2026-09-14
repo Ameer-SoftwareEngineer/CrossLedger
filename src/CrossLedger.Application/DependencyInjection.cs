@@ -15,9 +15,12 @@ public static class DependencyInjection
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly);
 
-        // Order matters: logging wraps everything, then validation runs before
-        // idempotency so a malformed request never occupies an idempotency key.
+        // Order matters: logging wraps everything; unit-of-work wraps validation and
+        // idempotency so the handler's ledger entries and IdempotencyBehavior's stored
+        // response commit in one SaveChanges call; validation runs before idempotency
+        // so a malformed request never occupies an idempotency key.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
 

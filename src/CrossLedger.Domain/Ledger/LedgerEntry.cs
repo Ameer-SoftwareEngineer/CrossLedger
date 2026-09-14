@@ -38,6 +38,21 @@ public sealed class LedgerEntry
         PostedAt = postedAt;
     }
 
+    /// <summary>Rehydration constructor for EF Core materialization: Amount maps as a
+    /// complex property, which EF Core cannot bind through a constructor parameter, so
+    /// this constructor omits it and EF sets it directly via the backing field afterward.
+    /// The validation in the public constructor is intentionally skipped here - a row
+    /// that made it into storage was already valid when it was created.</summary>
+    private LedgerEntry(LedgerEntryId id, TransferId transferId, WalletId walletId, LedgerDirection direction, DateTimeOffset postedAt)
+    {
+        Id = id;
+        TransferId = transferId;
+        WalletId = walletId;
+        Direction = direction;
+        PostedAt = postedAt;
+        Amount = default;
+    }
+
     /// <summary>The signed contribution of this entry to its wallet's balance: negative for a debit, positive for a credit.</summary>
     public Money SignedAmount => Direction == LedgerDirection.Debit ? -Amount : Amount;
 }

@@ -8,28 +8,26 @@ namespace CrossLedger.Application.Transfers;
 
 /// <summary>
 /// Mirrors the request flow in specification section 7.1: load the quote and wallets,
-/// let the domain post the four ledger entries, then commit atomically. Validation and
-/// idempotency are handled by pipeline behaviours, not by this handler.
+/// then let the domain post the four ledger entries. Validation, idempotency and the
+/// atomic commit (entries + idempotency record together) are pipeline behaviours, not
+/// this handler's concern - it only stages domain changes on the tracked entities.
 /// </summary>
 public sealed class CreateTransferCommandHandler : IRequestHandler<CreateTransferCommand, CreateTransferResult>
 {
     private readonly IQuoteRepository _quotes;
     private readonly IWalletRepository _wallets;
     private readonly IFxSettlementWalletResolver _fxSettlementWallets;
-    private readonly IUnitOfWork _unitOfWork;
     private readonly IClock _clock;
 
     public CreateTransferCommandHandler(
         IQuoteRepository quotes,
         IWalletRepository wallets,
         IFxSettlementWalletResolver fxSettlementWallets,
-        IUnitOfWork unitOfWork,
         IClock clock)
     {
         _quotes = quotes;
         _wallets = wallets;
         _fxSettlementWallets = fxSettlementWallets;
-        _unitOfWork = unitOfWork;
         _clock = clock;
     }
 
@@ -55,8 +53,6 @@ public sealed class CreateTransferCommandHandler : IRequestHandler<CreateTransfe
             transferId, quote,
             sourceWallet, fxSettlementSource, fxSettlementTarget, targetWallet,
             sourceAmount, now);
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var targetCreditEntry = entries[^1];
 
