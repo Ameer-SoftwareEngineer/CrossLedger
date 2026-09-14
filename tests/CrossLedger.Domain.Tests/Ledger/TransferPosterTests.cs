@@ -1,4 +1,5 @@
 using CrossLedger.Domain.Exceptions;
+using CrossLedger.Domain.Fx;
 using CrossLedger.Domain.Ledger;
 using CrossLedger.Domain.ValueObjects;
 using CrossLedger.Domain.Wallets;
@@ -49,6 +50,47 @@ public class TransferPosterTests
         targetWallet.Balance.Amount.Should().Be(27_850m);
 
         LedgerInvariants.AssertZeroSumPerCurrency(entries);
+    }
+
+    [Fact]
+    public void Posting_through_a_quote_converts_at_the_quotes_customer_rate()
+    {
+        var sourceWallet = CustomerWallet(Usd, openingBalance: 100m);
+        var targetWallet = CustomerWallet(Pkr);
+        var fxSettlementUsd = ClearingWallet(Usd);
+        var fxSettlementPkr = ClearingWallet(Pkr);
+        var quote = new Quote(QuoteId.New(), Usd, Pkr, midMarketRate: 279.90m, spreadRate: 0.005m, Now, TimeSpan.FromSeconds(30));
+
+        var entries = TransferPoster.Post(
+            TransferId.New(), quote,
+            sourceWallet, fxSettlementUsd, fxSettlementPkr, targetWallet,
+            sourceAmount: new Money(100m, Usd),
+            postedAt: Now);
+
+        entries.Should().HaveCount(4);
+        targetWallet.Balance.Should().Be(quote.Convert(new Money(100m, Usd), Now));
+        LedgerInvariants.AssertZeroSumPerCurrency(entries);
+    }
+
+    [Fact]
+    public void Posting_through_an_expired_quote_throws_and_posts_nothing()
+    {
+        var sourceWallet = CustomerWallet(Usd, openingBalance: 100m);
+        var targetWallet = CustomerWallet(Pkr);
+        var fxSettlementUsd = ClearingWallet(Usd);
+        var fxSettlementPkr = ClearingWallet(Pkr);
+        var quote = new Quote(QuoteId.New(), Usd, Pkr, midMarketRate: 279.90m, spreadRate: 0.005m, Now, TimeSpan.FromSeconds(30));
+        var afterExpiry = quote.ExpiresAt.AddSeconds(1);
+
+        var act = () => TransferPoster.Post(
+            TransferId.New(), quote,
+            sourceWallet, fxSettlementUsd, fxSettlementPkr, targetWallet,
+            sourceAmount: new Money(100m, Usd),
+            postedAt: afterExpiry);
+
+        act.Should().Throw<QuoteExpiredException>();
+        sourceWallet.Entries.Should().HaveCount(1); // only the opening credit from test setup
+        targetWallet.Entries.Should().BeEmpty();
     }
 
     [Fact]

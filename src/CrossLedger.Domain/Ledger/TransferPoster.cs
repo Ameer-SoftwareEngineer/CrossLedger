@@ -1,3 +1,4 @@
+using CrossLedger.Domain.Fx;
 using CrossLedger.Domain.ValueObjects;
 using CrossLedger.Domain.Wallets;
 
@@ -7,11 +8,32 @@ namespace CrossLedger.Domain.Ledger;
 /// Posts one cross-currency transfer as four balanced ledger entries:
 /// debit the source wallet, credit the source-currency FX settlement account,
 /// debit the target-currency FX settlement account, credit the target wallet.
-/// Amounts are pre-computed by the caller (from an accepted FX quote) — this
-/// service only enforces that the posting is atomic and balanced, never rates.
 /// </summary>
 public static class TransferPoster
 {
+    /// <summary>Posts a transfer through an accepted <see cref="Quote"/> rather than a
+    /// raw amount — the quote itself rejects a stale rate via <see cref="Quote.Convert"/>,
+    /// so an expired quote can never reach the ledger.</summary>
+    public static IReadOnlyList<LedgerEntry> Post(
+        TransferId transferId,
+        Quote quote,
+        Wallet sourceWallet,
+        Wallet fxSettlementSource,
+        Wallet fxSettlementTarget,
+        Wallet targetWallet,
+        Money sourceAmount,
+        DateTimeOffset postedAt)
+    {
+        var targetAmount = quote.Convert(sourceAmount, postedAt);
+
+        return Post(
+            transferId, sourceWallet, fxSettlementSource, fxSettlementTarget, targetWallet,
+            sourceAmount, targetAmount, postedAt);
+    }
+
+    /// <summary>Posts a transfer with pre-computed amounts. Prefer the <see cref="Quote"/>
+    /// overload in application code; this exists for callers that have already validated
+    /// a rate through some other path (e.g. tests).</summary>
     public static IReadOnlyList<LedgerEntry> Post(
         TransferId transferId,
         Wallet sourceWallet,
