@@ -21,7 +21,6 @@ public class CreateTransferCommandHandlerTests
     private readonly Mock<IQuoteRepository> _quotes = new();
     private readonly Mock<IWalletRepository> _wallets = new();
     private readonly Mock<IFxSettlementWalletResolver> _fxSettlementWallets = new();
-    private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IClock> _clock = new();
 
     private readonly Wallet _sourceWallet;
@@ -48,7 +47,7 @@ public class CreateTransferCommandHandlerTests
     }
 
     private CreateTransferCommandHandler CreateHandler() => new(
-        _quotes.Object, _wallets.Object, _fxSettlementWallets.Object, _unitOfWork.Object, _clock.Object);
+        _quotes.Object, _wallets.Object, _fxSettlementWallets.Object, _clock.Object);
 
     private CreateTransferCommand ValidCommand(decimal sourceAmount = 100m) => new(
         _quote.Id, _sourceWallet.Id, _targetWallet.Id, sourceAmount, "idem-key-1");
@@ -64,16 +63,6 @@ public class CreateTransferCommandHandlerTests
         result.TargetAmount.Should().Be(_quote.Convert(new Money(100m, Usd), Now));
         result.PostedAt.Should().Be(Now);
         _targetWallet.Balance.Should().Be(result.TargetAmount);
-    }
-
-    [Fact]
-    public async Task Handle_commits_the_unit_of_work_exactly_once()
-    {
-        var handler = CreateHandler();
-
-        await handler.Handle(ValidCommand(), CancellationToken.None);
-
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -110,18 +99,17 @@ public class CreateTransferCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_propagates_insufficient_funds_from_the_domain_without_committing()
+    public async Task Handle_propagates_insufficient_funds_from_the_domain()
     {
         var handler = CreateHandler();
 
         var act = () => handler.Handle(ValidCommand(sourceAmount: 500m), CancellationToken.None);
 
         await act.Should().ThrowAsync<InsufficientFundsException>();
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
-    public async Task Handle_propagates_quote_expired_from_the_domain_without_committing()
+    public async Task Handle_propagates_quote_expired_from_the_domain()
     {
         var expiredClockValue = _quote.ExpiresAt.AddSeconds(1);
         _clock.Setup(x => x.UtcNow).Returns(expiredClockValue);
@@ -130,6 +118,5 @@ public class CreateTransferCommandHandlerTests
         var act = () => handler.Handle(ValidCommand(), CancellationToken.None);
 
         await act.Should().ThrowAsync<QuoteExpiredException>();
-        _unitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

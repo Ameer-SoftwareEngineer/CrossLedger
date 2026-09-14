@@ -59,6 +59,30 @@ public sealed class Quote
         ExpiresAt = issuedAt + validFor;
     }
 
+    /// <summary>Rehydrates a quote exactly as it was persisted, bypassing the public
+    /// constructor's validation and spread computation — a row that made it into storage
+    /// was already valid when created, and CustomerRate is the value that was actually
+    /// quoted, not a value to recompute. Used by EF Core materialization only.</summary>
+    private Quote(
+        QuoteId id,
+        Currency fromCurrency,
+        Currency toCurrency,
+        decimal midMarketRate,
+        decimal spreadRate,
+        decimal customerRate,
+        DateTimeOffset issuedAt,
+        DateTimeOffset expiresAt)
+    {
+        Id = id;
+        FromCurrency = fromCurrency;
+        ToCurrency = toCurrency;
+        MidMarketRate = midMarketRate;
+        SpreadRate = spreadRate;
+        CustomerRate = customerRate;
+        IssuedAt = issuedAt;
+        ExpiresAt = expiresAt;
+    }
+
     public bool IsExpired(DateTimeOffset asOf) => asOf > ExpiresAt;
 
     /// <summary>Converts an amount in <see cref="FromCurrency"/> into <see cref="ToCurrency"/>
