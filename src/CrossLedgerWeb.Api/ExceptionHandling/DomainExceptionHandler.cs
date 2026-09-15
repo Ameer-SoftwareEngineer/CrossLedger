@@ -52,6 +52,7 @@ public sealed class DomainExceptionHandler : IExceptionHandler
             NoRouteAvailableException => (StatusCodes.Status503ServiceUnavailable, "No provider can serve this corridor", "NO_ROUTE_AVAILABLE"),
             PayoutReserveWalletNotConfiguredException => (StatusCodes.Status500InternalServerError, "Payout reserve wallet not configured", "PAYOUT_RESERVE_WALLET_MISSING"),
             InvalidPayoutTransitionException => (StatusCodes.Status409Conflict, "Invalid payout state transition", "INVALID_PAYOUT_TRANSITION"),
+            ConcurrencyConflictException => (StatusCodes.Status409Conflict, "Concurrent update conflict", "CONCURRENCY_CONFLICT"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request", "INVALID_ARGUMENT"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "UNEXPECTED_ERROR"),
         };

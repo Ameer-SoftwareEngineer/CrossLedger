@@ -18,6 +18,15 @@ public sealed class Wallet
     public Currency Currency { get; }
     public WalletKind Kind { get; }
 
+    /// <summary>Exists so a debit/credit produces a real UPDATE against this wallet's own
+    /// row, not just INSERTs into LedgerEntries - without that, SQL Server's rowversion
+    /// column never actually changes on a Post, so EF Core's optimistic concurrency check
+    /// (specification 2.4) never has anything to compare and silently never fires. Two
+    /// concurrent debits would otherwise both read the same balance, both pass the
+    /// sufficient-funds check, and both succeed - a genuine double-spend, found by
+    /// running real concurrent load against this exact code path, not by inspection.</summary>
+    public DateTimeOffset LastModifiedAt { get; private set; }
+
     public IReadOnlyList<LedgerEntry> Entries => _entries;
 
     public Money Balance => _entries.Aggregate(Money.Zero(Currency), (balance, entry) => balance + entry.SignedAmount);
@@ -28,6 +37,7 @@ public sealed class Wallet
         OwnerId = ownerId;
         Currency = currency;
         Kind = kind;
+        LastModifiedAt = DateTimeOffset.UtcNow;
     }
 
     public LedgerEntry Debit(Money amount, TransferId transferId, DateTimeOffset postedAt) =>
@@ -46,6 +56,7 @@ public sealed class Wallet
 
         var entry = new LedgerEntry(LedgerEntryId.New(), transferId, Id, direction, amount, postedAt);
         _entries.Add(entry);
+        LastModifiedAt = postedAt;
         return entry;
     }
 }
