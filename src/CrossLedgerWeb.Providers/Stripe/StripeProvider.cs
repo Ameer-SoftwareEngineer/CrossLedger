@@ -1,4 +1,5 @@
 using CrossLedgerWeb.Application.Payments;
+using CrossLedgerWeb.Domain.Payments;
 using CrossLedgerWeb.Providers.Common;
 using Microsoft.Extensions.Options;
 

@@ -6,6 +6,8 @@ namespace CrossLedgerWeb.Providers.Simulated;
 /// the instance it needs rather than the provider guessing what failure to inject.</summary>
 public sealed class SimulatedProviderOptions
 {
+    public const string SectionName = "SimulatedProvider";
+
     public ProviderHealthStatus HealthStatus { get; set; } = ProviderHealthStatus.Healthy;
     public bool RejectAllPayouts { get; set; }
     public TimeSpan QuotedSettlementTime { get; set; } = TimeSpan.FromMinutes(5);

@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using CrossLedgerWeb.Application.Payments;
+using CrossLedgerWeb.Domain.Payments;
 using CrossLedgerWeb.Domain.ValueObjects;
 using CrossLedgerWeb.Providers.Common;
 using Microsoft.Extensions.Options;

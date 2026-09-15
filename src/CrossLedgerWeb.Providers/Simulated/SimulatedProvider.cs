@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using CrossLedgerWeb.Application.Payments;
+using CrossLedgerWeb.Domain.Payments;
 using CrossLedgerWeb.Providers.Common;
 
 namespace CrossLedgerWeb.Providers.Simulated;

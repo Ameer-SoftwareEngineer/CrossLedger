@@ -1,5 +1,6 @@
 using CrossLedgerWeb.Domain.Auth;
 using CrossLedgerWeb.Domain.Fx;
+using CrossLedgerWeb.Domain.Payments;
 using CrossLedgerWeb.Domain.Wallets;
 using CrossLedgerWeb.Infrastructure.Identity;
 using CrossLedgerWeb.Infrastructure.Persistence.Configurations;
@@ -33,6 +34,8 @@ public sealed class CrossLedgerWebDbContext : IdentityDbContext<ApplicationUser,
     public DbSet<TwoFactorCredential> TwoFactorCredentials => Set<TwoFactorCredential>();
     public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
     public DbSet<UsedTotpCode> UsedTotpCodes => Set<UsedTotpCode>();
+    public DbSet<Payout> Payouts => Set<Payout>();
+    public DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents => Set<ProcessedWebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

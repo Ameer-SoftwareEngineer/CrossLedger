@@ -1,3 +1,5 @@
+using CrossLedgerWeb.Domain.Payments;
+
 namespace CrossLedgerWeb.Application.Payments;
 
 /// <summary>

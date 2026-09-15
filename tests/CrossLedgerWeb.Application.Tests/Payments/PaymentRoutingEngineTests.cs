@@ -1,5 +1,6 @@
 using CrossLedgerWeb.Application.Exceptions;
 using CrossLedgerWeb.Application.Payments;
+using CrossLedgerWeb.Domain.Payments;
 using CrossLedgerWeb.Domain.ValueObjects;
 using FluentAssertions;
 using Moq;
