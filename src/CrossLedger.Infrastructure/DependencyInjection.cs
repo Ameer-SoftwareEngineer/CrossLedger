@@ -28,6 +28,11 @@ public static class DependencyInjection
         services.AddScoped<IProviderStatsProvider, DefaultProviderStatsProvider>();
         services.AddSingleton<IClock, SystemClock>();
 
+        // CrossLedgerDbContext needs IDataProtectionProvider to encrypt TOTP secrets at
+        // rest (specification 6.4). Locally this persists keys to the file system; in
+        // production it would be configured with PersistKeysToAzureKeyVault.
+        services.AddDataProtection();
+
         AddExchangeRateProviders(services, configuration);
         AddIdentityAndJwt(services, configuration);
 
@@ -59,8 +64,14 @@ public static class DependencyInjection
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IStepUpTokenValidator, StepUpTokenValidator>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+        services.AddScoped<ITotpProvider, TotpProvider>();
+        services.AddScoped<ITwoFactorCredentialRepository, TwoFactorCredentialRepository>();
+        services.AddScoped<IRecoveryCodeRepository, RecoveryCodeRepository>();
+        services.AddScoped<IUsedTotpCodeRepository, UsedTotpCodeRepository>();
     }
 
     private static void AddExchangeRateProviders(IServiceCollection services, IConfiguration configuration)

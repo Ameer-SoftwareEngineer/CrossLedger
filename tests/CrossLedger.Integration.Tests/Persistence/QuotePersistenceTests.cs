@@ -2,6 +2,7 @@ using CrossLedger.Domain.Fx;
 using CrossLedger.Domain.ValueObjects;
 using CrossLedger.Infrastructure.Persistence;
 using CrossLedger.Infrastructure.Repositories;
+using CrossLedger.Integration.Tests.TestSupport;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +26,7 @@ public sealed class QuotePersistenceTests : IDisposable
             .UseSqlite(_connection)
             .Options;
 
-        using var context = new CrossLedgerDbContext(_options);
+        using var context = new CrossLedgerDbContext(_options, TestDataProtection.Provider);
         context.Database.EnsureCreated();
     }
 
@@ -37,13 +38,13 @@ public sealed class QuotePersistenceTests : IDisposable
         var now = DateTimeOffset.UtcNow;
         var quote = new Quote(QuoteId.New(), Usd, Pkr, midMarketRate: 279.90m, spreadRate: 0.005m, now, TimeSpan.FromSeconds(30));
 
-        await using (var writeContext = new CrossLedgerDbContext(_options))
+        await using (var writeContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider))
         {
             writeContext.Quotes.Add(quote);
             await writeContext.SaveChangesAsync();
         }
 
-        await using var readContext = new CrossLedgerDbContext(_options);
+        await using var readContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider);
         var reloaded = await new QuoteRepository(readContext).GetByIdAsync(quote.Id, CancellationToken.None);
 
         reloaded.Should().NotBeNull();

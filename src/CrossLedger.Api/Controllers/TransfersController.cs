@@ -1,7 +1,10 @@
+using CrossLedger.Api.Security;
+using CrossLedger.Application.Auth;
 using CrossLedger.Application.Transfers;
 using CrossLedger.Domain.ValueObjects;
 using CrossLedger.Shared.Transfers;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrossLedger.Api.Controllers;
@@ -19,8 +22,12 @@ public sealed class TransfersController : ControllerBase
 
     /// <summary>Every mutating endpoint requires an Idempotency-Key header
     /// (specification 2.3) - a repeated key replays the stored response instead of
-    /// posting the transfer again.</summary>
+    /// posting the transfer again. RequireStepUp only actually challenges the caller
+    /// once SourceAmount clears Limits:StepUpAbove (specification 6.2's worked example,
+    /// 6.3) - everyday transfers below the threshold pass straight through.</summary>
     [HttpPost]
+    [Authorize(Roles = Roles.Customer)]
+    [RequireStepUp(Operation = StepUpOperation.HighValueTransfer, ThresholdSetting = "Limits:StepUpAbove")]
     [ProducesResponseType<TransferResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<TransferResponse>> Create(
         CreateTransferRequest request,

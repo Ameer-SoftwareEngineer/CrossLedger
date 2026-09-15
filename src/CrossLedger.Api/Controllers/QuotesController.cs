@@ -1,12 +1,15 @@
+using CrossLedger.Application.Auth;
 using CrossLedger.Application.Fx;
 using CrossLedger.Shared.Fx;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CrossLedger.Api.Controllers;
 
 [ApiController]
 [Route("api/v1/quotes")]
+[Authorize(Roles = Roles.Customer)]
 public sealed class QuotesController : ControllerBase
 {
     private readonly IMediator _mediator;

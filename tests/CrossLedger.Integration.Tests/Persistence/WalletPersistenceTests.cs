@@ -2,6 +2,7 @@ using CrossLedger.Domain.ValueObjects;
 using CrossLedger.Domain.Wallets;
 using CrossLedger.Infrastructure.Persistence;
 using CrossLedger.Infrastructure.Repositories;
+using CrossLedger.Integration.Tests.TestSupport;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,7 @@ public sealed class WalletPersistenceTests : IDisposable
             .UseSqlite(_connection)
             .Options;
 
-        using var context = new CrossLedgerDbContext(_options);
+        using var context = new CrossLedgerDbContext(_options, TestDataProtection.Provider);
         context.Database.EnsureCreated();
     }
 
@@ -42,7 +43,7 @@ public sealed class WalletPersistenceTests : IDisposable
         var walletId = WalletId.New();
         var now = DateTimeOffset.UtcNow;
 
-        await using (var writeContext = new CrossLedgerDbContext(_options))
+        await using (var writeContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider))
         {
             var wallet = new Wallet(walletId, UserId.New(), Usd);
             wallet.Credit(new Money(100m, Usd), TransferId.New(), now);
@@ -52,7 +53,7 @@ public sealed class WalletPersistenceTests : IDisposable
             await writeContext.SaveChangesAsync();
         }
 
-        await using var readContext = new CrossLedgerDbContext(_options);
+        await using var readContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider);
         var reloaded = await new WalletRepository(readContext).GetByIdAsync(walletId, CancellationToken.None);
 
         reloaded.Should().NotBeNull();
@@ -67,7 +68,7 @@ public sealed class WalletPersistenceTests : IDisposable
         var walletId = WalletId.New();
         var now = DateTimeOffset.UtcNow;
 
-        await using (var writeContext = new CrossLedgerDbContext(_options))
+        await using (var writeContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider))
         {
             var wallet = new Wallet(walletId, UserId.New(), Usd, WalletKind.SystemClearing);
             wallet.Debit(new Money(500m, Usd), TransferId.New(), now);
@@ -76,7 +77,7 @@ public sealed class WalletPersistenceTests : IDisposable
             await writeContext.SaveChangesAsync();
         }
 
-        await using var readContext = new CrossLedgerDbContext(_options);
+        await using var readContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider);
         var reloaded = await new WalletRepository(readContext).GetByIdAsync(walletId, CancellationToken.None);
 
         reloaded!.Balance.Amount.Should().Be(-500m);
@@ -88,7 +89,7 @@ public sealed class WalletPersistenceTests : IDisposable
         var walletId = WalletId.New();
         var now = DateTimeOffset.UtcNow;
 
-        await using (var writeContext = new CrossLedgerDbContext(_options))
+        await using (var writeContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider))
         {
             var wallet = new Wallet(walletId, UserId.New(), Usd);
             wallet.Credit(new Money(100m, Usd), TransferId.New(), now);
@@ -97,7 +98,7 @@ public sealed class WalletPersistenceTests : IDisposable
             await writeContext.SaveChangesAsync();
         }
 
-        await using var readContext = new CrossLedgerDbContext(_options);
+        await using var readContext = new CrossLedgerDbContext(_options, TestDataProtection.Provider);
         var reloaded = await new WalletRepository(readContext).GetByIdAsync(walletId, CancellationToken.None);
 
         var entry = reloaded!.Entries.Single();
