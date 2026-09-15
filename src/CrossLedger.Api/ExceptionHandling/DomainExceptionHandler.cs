@@ -44,6 +44,10 @@ public sealed class DomainExceptionHandler : IExceptionHandler
             AccountLockedException => (StatusCodes.Status423Locked, "Account locked", "ACCOUNT_LOCKED"),
             InvalidRefreshTokenException => (StatusCodes.Status401Unauthorized, "Invalid refresh token", "INVALID_REFRESH_TOKEN"),
             RefreshTokenReuseDetectedException => (StatusCodes.Status401Unauthorized, "Refresh token reuse detected", "REFRESH_TOKEN_REUSE_DETECTED"),
+            TwoFactorNotEnabledException => (StatusCodes.Status409Conflict, "Two-factor authentication not enabled", "TWO_FACTOR_NOT_ENABLED"),
+            InvalidTotpCodeException => (StatusCodes.Status401Unauthorized, "Invalid authenticator code", "INVALID_TOTP_CODE"),
+            TotpCodeReplayedException => (StatusCodes.Status401Unauthorized, "Authenticator code already used", "TOTP_CODE_REPLAYED"),
+            RecoveryCodeAlreadyUsedException => (StatusCodes.Status409Conflict, "Recovery code already used", "RECOVERY_CODE_ALREADY_USED"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request", "INVALID_ARGUMENT"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "UNEXPECTED_ERROR"),
         };

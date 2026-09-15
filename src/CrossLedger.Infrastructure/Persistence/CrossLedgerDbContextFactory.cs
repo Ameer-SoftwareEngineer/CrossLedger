@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -12,6 +13,11 @@ public sealed class CrossLedgerDbContextFactory : IDesignTimeDbContextFactory<Cr
         var optionsBuilder = new DbContextOptionsBuilder<CrossLedgerDbContext>();
         optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=CrossLedger;Trusted_Connection=True;TrustServerCertificate=True;");
 
-        return new CrossLedgerDbContext(optionsBuilder.Options);
+        // Only used to shape the model for migration generation - no data is ever
+        // actually protected/unprotected at design time, so any valid provider works;
+        // this one is isolated from the real app's key ring by application name alone.
+        var dataProtectionProvider = DataProtectionProvider.Create("CrossLedger.DesignTime");
+
+        return new CrossLedgerDbContext(optionsBuilder.Options, dataProtectionProvider);
     }
 }

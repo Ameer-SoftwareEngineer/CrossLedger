@@ -1,11 +1,15 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Threading.RateLimiting;
 using CrossLedger.Api.ExceptionHandling;
+using CrossLedger.Api.Security;
 using CrossLedger.Application;
 using CrossLedger.Infrastructure;
 using CrossLedger.Infrastructure.Identity;
 using CrossLedger.Providers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
@@ -44,6 +48,10 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Keep claim types exactly as JwtTokenGenerator wrote them (e.g. "sub") instead
+        // of the framework's default inbound-claim renaming, so HttpContext.User reads
+        // consistently with StepUpTokenValidator and IJwtTokenGenerator's own claims.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -57,6 +65,28 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+
+// Specification 6.4: "Rate limiting on verification" - keyed per authenticated user
+// (falling back to IP if that's ever missing) so one account's lockout can't be used to
+// deny another user's attempts, and queueing is off so an exhausted caller gets an
+// immediate 429 rather than piling up requests.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy(RateLimiterPolicies.TotpVerification, httpContext =>
+    {
+        var partitionKey = httpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+            ?? httpContext.Connection.RemoteIpAddress?.ToString()
+            ?? "unknown";
+
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(5),
+            QueueLimit = 0,
+        });
+    });
+});
 
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -75,6 +105,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 
