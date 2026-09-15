@@ -51,6 +51,6 @@ public class ExchangeRateApiProviderTests
 
         var act = () => provider.GetRateAsync(Usd, Pkr, CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*unsupported-code*");
+        await act.Should().ThrowAsync<ExchangeRateProviderRejectedException>().WithMessage("*unsupported-code*");
     }
 }

@@ -28,7 +28,7 @@ public sealed class ExchangeRateApiProvider : IExchangeRateProvider
             ?? throw new InvalidOperationException("ExchangeRate-API returned an empty response.");
 
         if (!string.Equals(response.Result, "success", StringComparison.OrdinalIgnoreCase) || response.ConversionRate is null)
-            throw new InvalidOperationException($"ExchangeRate-API request failed: {response.ErrorType ?? "unknown error"}.");
+            throw new ExchangeRateProviderRejectedException($"ExchangeRate-API request failed: {response.ErrorType ?? "unknown error"}.");
 
         var asOf = DateTimeOffset.FromUnixTimeSeconds(response.TimeLastUpdateUnix);
 

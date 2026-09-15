@@ -58,6 +58,23 @@ public class ResilientExchangeRateProviderTests
     }
 
     [Fact]
+    public async Task Does_not_retry_a_deterministic_rejection_before_falling_back()
+    {
+        // A bad API key or an unsupported pair fails identically every time - retrying
+        // it three times with exponential backoff just adds seconds of latency for no
+        // benefit. Only genuinely transient failures (asserted above) are worth retrying.
+        _primary.Setup(x => x.GetRateAsync(Usd, Pkr, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new ExchangeRateProviderRejectedException("bad API key"));
+        _fallback.Setup(x => x.GetRateAsync(Usd, Pkr, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new ExchangeRateReading(Usd, Pkr, 279.10m, DateTimeOffset.UtcNow, IsStale: false));
+        var provider = new ResilientExchangeRateProvider(_primary.Object, _fallback.Object);
+
+        await provider.GetRateAsync(Usd, Pkr, CancellationToken.None);
+
+        _primary.Verify(x => x.GetRateAsync(Usd, Pkr, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Propagates_the_fallbacks_failure_when_both_providers_fail()
     {
         _primary.Setup(x => x.GetRateAsync(Usd, Pkr, It.IsAny<CancellationToken>()))
