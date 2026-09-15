@@ -1,6 +1,7 @@
 using CrossLedger.Api.ExceptionHandling;
 using CrossLedger.Application;
 using CrossLedger.Infrastructure;
+using CrossLedger.Providers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddPaymentProviders(builder.Configuration);
 
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 builder.Services.AddProblemDetails();
