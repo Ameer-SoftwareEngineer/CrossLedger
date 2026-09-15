@@ -1,4 +1,5 @@
 using CrossLedger.Application.Abstractions;
+using CrossLedger.Application.Payments;
 using CrossLedger.Infrastructure.Fx;
 using CrossLedger.Infrastructure.Persistence;
 using CrossLedger.Infrastructure.Repositories;
@@ -21,6 +22,8 @@ public static class DependencyInjection
         services.AddScoped<IFxSettlementWalletResolver, FxSettlementWalletResolver>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IIdempotencyStore, IdempotencyStore>();
+        services.AddScoped<IRoutingAuditLog, RoutingAuditLog>();
+        services.AddScoped<IProviderStatsProvider, DefaultProviderStatsProvider>();
         services.AddSingleton<IClock, SystemClock>();
 
         AddExchangeRateProviders(services, configuration);

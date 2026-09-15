@@ -1,5 +1,6 @@
 using System.Reflection;
 using CrossLedger.Application.Behaviors;
+using CrossLedger.Application.Payments;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,9 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(UnitOfWorkBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(IdempotencyBehavior<,>));
+
+        services.AddScoped<IProviderQuoteScorer, ProviderQuoteScorer>();
+        services.AddScoped<PaymentRoutingEngine>();
 
         return services;
     }

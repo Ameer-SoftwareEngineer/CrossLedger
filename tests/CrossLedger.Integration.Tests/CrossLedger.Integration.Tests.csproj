@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CrossLedger.Api\CrossLedger.Api.csproj" />
     <ProjectReference Include="..\..\src\CrossLedger.Infrastructure\CrossLedger.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\CrossLedger.Providers\CrossLedger.Providers.csproj" />
   </ItemGroup>
 
 </Project>

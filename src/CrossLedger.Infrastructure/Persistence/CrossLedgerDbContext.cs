@@ -16,6 +16,7 @@ public sealed class CrossLedgerDbContext : DbContext
     public DbSet<Wallet> Wallets => Set<Wallet>();
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
+    public DbSet<RoutingDecisionRecord> RoutingDecisions => Set<RoutingDecisionRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
