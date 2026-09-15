@@ -39,6 +39,11 @@ public sealed class DomainExceptionHandler : IExceptionHandler
             CurrencyMismatchException => (StatusCodes.Status400BadRequest, "Currency mismatch", "CURRENCY_MISMATCH"),
             ExchangeRateUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Exchange rate unavailable", "RATE_UNAVAILABLE"),
             SettlementWalletNotConfiguredException => (StatusCodes.Status500InternalServerError, "Settlement wallet not configured", "SETTLEMENT_WALLET_MISSING"),
+            RegistrationFailedException => (StatusCodes.Status400BadRequest, "Registration failed", "REGISTRATION_FAILED"),
+            InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid credentials", "INVALID_CREDENTIALS"),
+            AccountLockedException => (StatusCodes.Status423Locked, "Account locked", "ACCOUNT_LOCKED"),
+            InvalidRefreshTokenException => (StatusCodes.Status401Unauthorized, "Invalid refresh token", "INVALID_REFRESH_TOKEN"),
+            RefreshTokenReuseDetectedException => (StatusCodes.Status401Unauthorized, "Refresh token reuse detected", "REFRESH_TOKEN_REUSE_DETECTED"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request", "INVALID_ARGUMENT"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "UNEXPECTED_ERROR"),
         };

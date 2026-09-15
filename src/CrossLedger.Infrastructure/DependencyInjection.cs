@@ -1,8 +1,10 @@
 using CrossLedger.Application.Abstractions;
 using CrossLedger.Application.Payments;
 using CrossLedger.Infrastructure.Fx;
+using CrossLedger.Infrastructure.Identity;
 using CrossLedger.Infrastructure.Persistence;
 using CrossLedger.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
@@ -27,8 +29,38 @@ public static class DependencyInjection
         services.AddSingleton<IClock, SystemClock>();
 
         AddExchangeRateProviders(services, configuration);
+        AddIdentityAndJwt(services, configuration);
 
         return services;
+    }
+
+    private static void AddIdentityAndJwt(IServiceCollection services, IConfiguration configuration)
+    {
+        services
+            .AddIdentityCore<ApplicationUser>(options =>
+            {
+                // Argon2PasswordHasher below replaces Identity's default PBKDF2 hasher;
+                // these options are the account-policy side of specification 6.1.
+                options.Password.RequiredLength = 8;
+                options.Password.RequireNonAlphanumeric = true;
+                options.Password.RequireUppercase = true;
+                options.Password.RequireLowercase = true;
+                options.Password.RequireDigit = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.User.RequireUniqueEmail = true;
+            })
+            .AddRoles<ApplicationRole>()
+            .AddEntityFrameworkStores<CrossLedgerDbContext>()
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
+
+        services.AddScoped<IPasswordHasher<ApplicationUser>, Argon2PasswordHasher>();
+
+        services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
     }
 
     private static void AddExchangeRateProviders(IServiceCollection services, IConfiguration configuration)

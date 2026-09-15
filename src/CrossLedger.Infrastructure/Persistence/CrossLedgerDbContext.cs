@@ -1,11 +1,17 @@
+using CrossLedger.Domain.Auth;
 using CrossLedger.Domain.Fx;
 using CrossLedger.Domain.Wallets;
+using CrossLedger.Infrastructure.Identity;
 using CrossLedger.Infrastructure.Persistence.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace CrossLedger.Infrastructure.Persistence;
 
-public sealed class CrossLedgerDbContext : DbContext
+/// <summary>Inherits IdentityDbContext rather than composing a separate identity store,
+/// so user/role/token tables and the ledger's own tables share one migration history
+/// and one SaveChanges transaction boundary.</summary>
+public sealed class CrossLedgerDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
     public CrossLedgerDbContext(DbContextOptions<CrossLedgerDbContext> options) : base(options)
     {
@@ -17,9 +23,11 @@ public sealed class CrossLedgerDbContext : DbContext
     public DbSet<Quote> Quotes => Set<Quote>();
     public DbSet<IdempotencyRecord> IdempotencyRecords => Set<IdempotencyRecord>();
     public DbSet<RoutingDecisionRecord> RoutingDecisions => Set<RoutingDecisionRecord>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CrossLedgerDbContext).Assembly);
     }
 }
