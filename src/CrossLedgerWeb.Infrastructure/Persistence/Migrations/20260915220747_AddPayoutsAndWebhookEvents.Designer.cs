@@ -5,6 +5,7 @@ using CrossLedgerWeb.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CrossLedgerWeb.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(CrossLedgerWebDbContext))]
-    partial class CrossLedgerWebDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260915220747_AddPayoutsAndWebhookEvents")]
+    partial class AddPayoutsAndWebhookEvents
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -222,6 +225,54 @@ namespace CrossLedgerWeb.Infrastructure.Persistence.Migrations
                     b.ToTable("LedgerEntries", (string)null);
                 });
 
+            modelBuilder.Entity("CrossLedgerWeb.Domain.Payments.Payout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProviderCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ProviderReference")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("SourceWalletId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("TransferId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.ComplexProperty<Dictionary<string, object>>("Amount", "CrossLedgerWeb.Domain.Payments.Payout.Amount#Money", b1 =>
+                        {
+                            b1.Property<decimal>("Amount")
+                                .HasColumnType("decimal(19,4)")
+                                .HasColumnName("Amount");
+
+                            b1.Property<string>("Currency")
+                                .IsRequired()
+                                .HasMaxLength(3)
+                                .HasColumnType("nvarchar(3)")
+                                .HasColumnName("CurrencyCode");
+                        });
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransferId");
+
+                    b.HasIndex("ProviderCode", "ProviderReference")
+                        .IsUnique()
+                        .HasFilter("[ProviderReference] IS NOT NULL");
+
+                    b.ToTable("Payouts", (string)null);
+                });
+
             modelBuilder.Entity("CrossLedgerWeb.Domain.Wallets.Wallet", b =>
                 {
                     b.Property<Guid>("Id")
@@ -360,6 +411,24 @@ namespace CrossLedgerWeb.Infrastructure.Persistence.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("IdempotencyRecords", (string)null);
+                });
+
+            modelBuilder.Entity("CrossLedgerWeb.Infrastructure.Persistence.Models.ProcessedWebhookEvent", b =>
+                {
+                    b.Property<string>("ProviderCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EventId")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTimeOffset>("ProcessedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("ProviderCode", "EventId");
+
+                    b.ToTable("ProcessedWebhookEvents", (string)null);
                 });
 
             modelBuilder.Entity("CrossLedgerWeb.Infrastructure.Persistence.Models.RoutingDecisionRecord", b =>

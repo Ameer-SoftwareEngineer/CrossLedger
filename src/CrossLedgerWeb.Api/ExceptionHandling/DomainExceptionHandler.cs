@@ -48,6 +48,10 @@ public sealed class DomainExceptionHandler : IExceptionHandler
             InvalidTotpCodeException => (StatusCodes.Status401Unauthorized, "Invalid authenticator code", "INVALID_TOTP_CODE"),
             TotpCodeReplayedException => (StatusCodes.Status401Unauthorized, "Authenticator code already used", "TOTP_CODE_REPLAYED"),
             RecoveryCodeAlreadyUsedException => (StatusCodes.Status409Conflict, "Recovery code already used", "RECOVERY_CODE_ALREADY_USED"),
+            PayoutNotFoundException => (StatusCodes.Status404NotFound, "Payout not found", "PAYOUT_NOT_FOUND"),
+            NoRouteAvailableException => (StatusCodes.Status503ServiceUnavailable, "No provider can serve this corridor", "NO_ROUTE_AVAILABLE"),
+            PayoutReserveWalletNotConfiguredException => (StatusCodes.Status500InternalServerError, "Payout reserve wallet not configured", "PAYOUT_RESERVE_WALLET_MISSING"),
+            InvalidPayoutTransitionException => (StatusCodes.Status409Conflict, "Invalid payout state transition", "INVALID_PAYOUT_TRANSITION"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request", "INVALID_ARGUMENT"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred", "UNEXPECTED_ERROR"),
         };

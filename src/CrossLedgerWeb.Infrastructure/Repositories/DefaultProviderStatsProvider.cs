@@ -1,4 +1,5 @@
 using CrossLedgerWeb.Application.Payments;
+using CrossLedgerWeb.Domain.Payments;
 
 namespace CrossLedgerWeb.Infrastructure.Repositories;
 

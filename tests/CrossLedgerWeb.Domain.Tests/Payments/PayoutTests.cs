@@ -15,6 +15,7 @@ public class PayoutTests
     {
         (PayoutState.Quoted, PayoutState.Reserved),
         (PayoutState.Reserved, PayoutState.Submitted),
+        (PayoutState.Reserved, PayoutState.PendingManual),
         (PayoutState.Submitted, PayoutState.ProviderFailed),
         (PayoutState.Submitted, PayoutState.Processing),
         (PayoutState.ProviderFailed, PayoutState.Submitted),
@@ -38,9 +39,11 @@ public class PayoutTests
             yield return [from, to];
     }
 
+    private static readonly Currency Usd = Currency.From("USD");
+
     private static Payout PayoutIn(PayoutState state)
     {
-        var payout = new Payout(PayoutId.New(), TransferId.New());
+        var payout = new Payout(PayoutId.New(), TransferId.New(), WalletId.New(), new Money(100m, Usd));
 
         // Drive it there through whatever legal path reaches this state, so the test
         // never has to reach into private state.
@@ -87,9 +90,17 @@ public class PayoutTests
     [Fact]
     public void A_new_payout_starts_quoted()
     {
-        var payout = new Payout(PayoutId.New(), TransferId.New());
+        var payout = new Payout(PayoutId.New(), TransferId.New(), WalletId.New(), new Money(100m, Usd));
 
         payout.State.Should().Be(PayoutState.Quoted);
+    }
+
+    [Fact]
+    public void A_zero_or_negative_amount_is_rejected()
+    {
+        var act = () => new Payout(PayoutId.New(), TransferId.New(), WalletId.New(), new Money(0m, Usd));
+
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
@@ -100,5 +111,27 @@ public class PayoutTests
         payout.TransitionTo(PayoutState.Submitted);
 
         payout.State.Should().Be(PayoutState.Submitted);
+    }
+
+    [Fact]
+    public void MarkAccepted_records_the_provider_and_its_reference_and_moves_to_processing()
+    {
+        var payout = PayoutIn(PayoutState.Submitted);
+
+        payout.MarkAccepted(ProviderCode.Simulated, "sim-ref-123");
+
+        payout.State.Should().Be(PayoutState.Processing);
+        payout.ProviderCode.Should().Be(ProviderCode.Simulated);
+        payout.ProviderReference.Should().Be("sim-ref-123");
+    }
+
+    [Fact]
+    public void Reverse_is_rejected_once_already_reversed()
+    {
+        var payout = PayoutIn(PayoutState.Reversed);
+
+        var act = payout.Reverse;
+
+        act.Should().Throw<InvalidPayoutTransitionException>();
     }
 }
