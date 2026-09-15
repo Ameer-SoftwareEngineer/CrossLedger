@@ -1,5 +1,7 @@
 using CrossLedgerWeb.Application.Abstractions;
+using CrossLedgerWeb.Application.Exceptions;
 using CrossLedgerWeb.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace CrossLedgerWeb.Infrastructure.Repositories;
 
@@ -12,6 +14,20 @@ public sealed class UnitOfWork : IUnitOfWork
         _db = db;
     }
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken) =>
-        _db.SaveChangesAsync(cancellationToken);
+    public async Task SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Translated rather than left to propagate - Application has no reference to
+            // EF Core and cannot catch this type itself (specification 2.4's retry logic
+            // lives in ConcurrencyRetryBehavior, in Application).
+            throw new ConcurrencyConflictException(ex);
+        }
+    }
+
+    public void ClearTrackedChanges() => _db.ChangeTracker.Clear();
 }

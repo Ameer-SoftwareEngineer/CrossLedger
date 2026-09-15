@@ -16,6 +16,7 @@ public sealed class WalletConfiguration : IEntityTypeConfiguration<Wallet>
         builder.Property(w => w.OwnerId).HasConversion(new UserIdConverter());
         builder.Property(w => w.Currency).HasConversion(new CurrencyConverter()).HasMaxLength(3).IsRequired();
         builder.Property(w => w.Kind).HasConversion<string>().HasMaxLength(20);
+        builder.Property(w => w.LastModifiedAt);
 
         // Balance is derived from Entries, never its own column (specification 2.1).
         builder.Ignore(w => w.Balance);
