@@ -17,4 +17,6 @@ public sealed class QuoteRepository : IQuoteRepository
 
     public Task<Quote?> GetByIdAsync(QuoteId id, CancellationToken cancellationToken) =>
         _db.Quotes.FirstOrDefaultAsync(q => q.Id == id, cancellationToken);
+
+    public void Add(Quote quote) => _db.Quotes.Add(quote);
 }

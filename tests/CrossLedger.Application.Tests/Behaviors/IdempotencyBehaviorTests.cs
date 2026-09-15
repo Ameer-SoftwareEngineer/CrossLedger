@@ -1,6 +1,7 @@
 using System.Text.Json;
 using CrossLedger.Application.Abstractions;
 using CrossLedger.Application.Behaviors;
+using CrossLedger.Domain.ValueObjects;
 using FluentAssertions;
 using MediatR;
 using Moq;
@@ -12,6 +13,8 @@ public class IdempotencyBehaviorTests
     public sealed record PlainRequest(string Value) : IRequest<string>;
 
     public sealed record IdempotentRequest(string IdempotencyKey, string Value) : IRequest<string>, IIdempotentRequest;
+
+    public sealed record MoneyRequest(string IdempotencyKey) : IRequest<Money>, IIdempotentRequest;
 
     private readonly Mock<IIdempotencyStore> _store = new();
 
@@ -60,5 +63,32 @@ public class IdempotencyBehaviorTests
         result.Should().Be("stored-response");
         nextCalled.Should().BeFalse();
         _store.Verify(x => x.SaveResponseAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // Regression test: Currency's constructor is private (only Currency.From
+    // validates and builds one), so System.Text.Json's default reflection-based
+    // materialization silently produces a default(Currency) with a null Code instead
+    // of throwing - discovered by replaying an idempotent transfer against a real
+    // running API and getting back correct amounts but null currency codes.
+    [Fact]
+    public async Task A_replayed_response_containing_a_currency_round_trips_its_code_correctly()
+    {
+        var original = new Money(86.14m, Currency.From("EUR"));
+        _store.Setup(x => x.FindResponseAsync("key-1", It.IsAny<CancellationToken>())).ReturnsAsync((string?)null);
+        var behavior = new IdempotencyBehavior<MoneyRequest, Money>(_store.Object);
+        string? captured = null;
+        _store.Setup(x => x.SaveResponseAsync("key-1", It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, CancellationToken>((_, payload, _) => captured = payload);
+
+        await behavior.Handle(new MoneyRequest("key-1"), _ => Task.FromResult(original), CancellationToken.None);
+
+        captured.Should().NotBeNull();
+        _store.Setup(x => x.FindResponseAsync("key-1", It.IsAny<CancellationToken>())).ReturnsAsync(captured);
+
+        var replayed = await behavior.Handle(
+            new MoneyRequest("key-1"), _ => throw new InvalidOperationException("must not re-run"), CancellationToken.None);
+
+        replayed.Should().Be(original);
+        replayed.Currency.Code.Should().Be("EUR");
     }
 }

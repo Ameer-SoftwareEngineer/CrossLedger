@@ -39,7 +39,13 @@ public static class DependencyInjection
 
         services.AddHttpClient<FrankfurterProvider>(client =>
         {
-            client.BaseAddress = new Uri("https://api.frankfurter.app/");
+            // frankfurter.app now redirects here permanently; pointing at the current
+            // domain directly avoids paying for that redirect on every call. Frankfurter
+            // is ECB-sourced, so it only covers the ~30 currencies the ECB publishes -
+            // PKR is notably not one of them, so it cannot actually fall back for the
+            // USD -> PKR corridor the specification uses as its own example. It still
+            // covers the major/EU corridors it was chosen for.
+            client.BaseAddress = new Uri("https://api.frankfurter.dev/v1/");
         });
 
         services.AddMemoryCache();

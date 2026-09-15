@@ -31,6 +31,12 @@ public sealed class ResilientExchangeRateProvider : IExchangeRateProvider
                 MaxRetryAttempts = 3,
                 BackoffType = DelayBackoffType.Exponential,
                 Delay = TimeSpan.FromMilliseconds(200),
+                // A bad API key or an unsupported pair fails identically on every
+                // attempt - retrying it just burns several seconds of backoff before
+                // reaching the fallback anyway. Only genuinely transient failures
+                // (timeouts, connection resets, 5xx) are worth retrying.
+                ShouldHandle = new PredicateBuilder<ExchangeRateReading>()
+                    .Handle<Exception>(ex => ex is not ExchangeRateProviderRejectedException),
             })
             .AddCircuitBreaker(new CircuitBreakerStrategyOptions<ExchangeRateReading>
             {

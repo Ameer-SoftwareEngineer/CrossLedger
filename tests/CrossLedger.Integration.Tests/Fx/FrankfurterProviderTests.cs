@@ -45,6 +45,6 @@ public class FrankfurterProviderTests
 
         var act = () => provider.GetRateAsync(Usd, Pkr, CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<ExchangeRateProviderRejectedException>();
     }
 }

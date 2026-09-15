@@ -24,7 +24,7 @@ public sealed class FrankfurterProvider : IExchangeRateProvider
             ?? throw new InvalidOperationException("Frankfurter returned an empty response.");
 
         if (!response.Rates.TryGetValue(to.Code, out var rate))
-            throw new InvalidOperationException($"Frankfurter did not return a rate for {from.Code}/{to.Code}.");
+            throw new ExchangeRateProviderRejectedException($"Frankfurter did not return a rate for {from.Code}/{to.Code}.");
 
         var asOf = new DateTimeOffset(response.Date.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
 
